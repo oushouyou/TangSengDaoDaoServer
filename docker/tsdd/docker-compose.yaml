@@ -10,24 +10,24 @@ services:
     volumes:
       - ./configs/wk.yaml:/root/wukongim/wk.yaml
       - ./logs/wk:/root/wukongim/logs
-  tangsengdaodaoserver:  # 唐僧叨叨的业务服务
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoserver:latest
-    restart: always
-    command: "api"
-    healthcheck:
-      test: "wget -q -Y off -O /dev/null http://localhost:8090/v1/ping > /dev/null 2>&1"
-      interval: 10s
-      timeout: 10s
-      retries: 3
-    depends_on:
-       - redis
-       - mysql
-       - wukongim
-    ports:
-      - "8090:8090"
-    volumes:
-      - ./configs/tsdd.yaml:/home/configs/tsdd.yaml
-      - ./logs/tsdd:/home/logs
+  # tangsengdaodaoserver:  # 唐僧叨叨的业务服务
+  #   image: tangsengdaodaoserver:latest
+  #   restart: always
+  #   command: "api"
+  #   healthcheck:
+  #     test: "wget -q -Y off -O /dev/null http://localhost:8090/v1/ping > /dev/null 2>&1"
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 3
+  #   depends_on:
+  #      - redis
+  #      - mysql
+  #      - wukongim
+  #   ports:
+  #     - "8090:8090"
+  #   volumes:
+  #     - ./configs/tsdd.yaml:/home/configs/tsdd.yaml
+  #     - ./logs/tsdd:/home/logs
   tangsengdaodaoweb:  # 唐僧叨叨的web服务
     image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoweb:latest
     restart: always
@@ -35,6 +35,13 @@ services:
       - API_URL
     ports:
       - "82:80" 
+  tangsengdaodaomanager:  # 唐僧叨叨的后台管理系统
+    image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaomanager:latest
+    restart: always
+    environment:
+      - API_URL
+    ports:
+      - "83:80"
   minio: # minio文件管理服务
     image: minio/minio:latest # use a remote image
     expose:
@@ -66,7 +73,9 @@ services:
       - MYSQL_ROOT_PASSWORD
       - MYSQL_DATABASE
     volumes:
-      - ./mysqldata:/var/lib/mysql                    
+      - ./mysqldata:/var/lib/mysql  
+    ports:
+      - "3306:3306"                  
   redis:  # redis
     image: redis
     restart: always

@@ -14,7 +14,7 @@ mode: "debug" #   运行模式 debug or release
 
 ##################### 悟空IM配置 ####################
 wukongIM:
- apiURL: "http://wukongim:5001" # 悟空IM的api地址 格式： http://xx.xx.xx.xx:5001
+ apiURL: "http://wukongim:5100" # 悟空IM的api地址 格式： http://xx.xx.xx.xx:5001
  managerToken: "" # 悟空IM的管理者token 悟空IM配置了就需要填写，没配置就不需要
 
 ##################### db ####################
@@ -27,7 +27,7 @@ db:
 
 ##################### 外网配置 ####################
 external: 
- ip: "#EXTERNAL_IP#" # 外网ip
+ ip: "127.0.0.1" # 外网ip
  #baseURL: "" # 外网访问地址 例如 http://10.2.3.1:8090
  #webLoginURL: "" # web im的登录地址 例如 https://web.tangsengdaodao.com
 

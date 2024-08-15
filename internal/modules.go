@@ -5,6 +5,7 @@ import (
 	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/base"
 	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/channel"
 	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/common"
+	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/customersvc"
 	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/file"
 	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/group"
 	_ "github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/message"
