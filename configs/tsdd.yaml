@@ -14,8 +14,8 @@ grpcAddr: "0.0.0.0:6979" # webhook grpc监听地址 给悟空IM提供的
 
 ##################### 悟空IM配置 ####################
 wukongIM:
-  apiURL: "http://127.0.0.1:5100" # 悟空IM的api地址 格式： http://xx.xx.xx.xx:5001
-#  managerToken: "" # 悟空IM的管理者token 悟空IM配置了就需要填写，没配置就不需要
+  apiURL: "http://127.0.0.1:5001" # 悟空IM的api地址 格式： http://xx.xx.xx.xx:5001
+  managerToken: "abcdefg" # 悟空IM的管理者token 悟空IM配置了就需要填写，没配置就不需要
 
 ##################### db ####################
 db:

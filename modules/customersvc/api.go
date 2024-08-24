@@ -1,6 +1,7 @@
 package customersvc
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/config"
@@ -18,19 +19,31 @@ func New(ctx *config.Context) *CustomersvcGroup {
 }
 
 func (c *CustomersvcGroup) Route(r *wkhttp.WKHttp) {
-	r.POST("/awakenTheGroup", c.AwakenTheGroup)
+	r.POST("/v1/awakenTheGroup", c.AwakenTheGroup)
+}
+
+type custormerReq struct {
+	Username string `json:"username"`
+	Phone    string `json:"phone"`
+	Email    string `json:"email"`
 }
 
 func (c *CustomersvcGroup) AwakenTheGroup(r *wkhttp.Context) {
-
-	externalNo := r.MustGet("externalNo").(string)
-
-	resp, err := c.service.AwakenTheGroup(externalNo)
+	var creq custormerReq
+	if err := r.BindJSON(&creq); err != nil {
+		r.ResponseError(errors.New("请求数据格式有误！"))
+		return
+	}
+	customer := Customer{
+		Username: creq.Username,
+		Phone:    creq.Phone,
+		Email:    creq.Email,
+	}
+	resp, err := c.service.AwakenTheGroup(customer)
 	if err != nil {
 		r.ResponseError(err)
 		return
 	}
-
 	r.JSON(http.StatusOK, &CustomersvcGroupResp{
 		GroupId: resp,
 	})

@@ -84,6 +84,8 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+    ports:
+      - 6379:6379  
   adminer:  # mysql web管理工具 调试用，为了安全生产不要打开
    image: adminer:latest
    ports:

@@ -30,7 +30,7 @@ func (d *DB) insert(m *model) error {
 
 type model struct {
 	CustomerExternalNo string
-	UserId             string
-	GroupId            string
+	UserUid            string
+	GroupNo            string
 	db.BaseModel
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/common"
 	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/config"
 	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/pkg/log"
 	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/pkg/util"
@@ -124,10 +125,20 @@ func (s *Service) GetCreatedCountWithDate(date string) (int64, error) {
 
 // AddGroup 添加一个群
 func (s *Service) AddGroup(model *AddGroupReq) error {
-	err := s.db.Insert(&Model{
-		GroupNo: model.GroupNo,
-		Name:    model.Name,
-	})
+	version := s.ctx.GenSeq(common.GroupSeqKey)
+	//不能解决并发问题
+	exits, err := s.db.QueryWithGroupNo(model.GroupNo)
+	if exits == nil {
+		err := s.db.Insert(&Model{
+			GroupNo:             model.GroupNo,
+			Name:                model.Name,
+			Creator:             model.Creator,
+			Status:              GroupStatusNormal,
+			Version:             version,
+			AllowViewHistoryMsg: int(common.GroupAllowViewHistoryMsgEnabled),
+		})
+		return err
+	}
 	return err
 }
 
@@ -267,10 +278,15 @@ func (s *Service) GetUserSupers(uid string) ([]*InfoResp, error) {
 }
 
 func (s *Service) AddMember(model *AddMemberReq) error {
-	err := s.db.InsertMember(&MemberModel{
-		GroupNo: model.GroupNo,
-		UID:     model.MemberUID,
-	})
+	//不能解决并发问题
+	eixts, err := s.db.ExistMember(model.MemberUID, model.GroupNo)
+	if !eixts {
+		err := s.db.InsertMember(&MemberModel{
+			GroupNo: model.GroupNo,
+			UID:     model.MemberUID,
+		})
+		return err
+	}
 	return err
 }
 func (s *Service) GetGroupMemberMaxVersion(groupNo string) (int64, error) {
@@ -395,6 +411,7 @@ func (s *Service) GetMembersWithUIDAndGroupIds(uid string, groupNos []string) ([
 type AddGroupReq struct {
 	GroupNo string
 	Name    string
+	Creator string
 }
 
 // AddMemberReq 添加群成员

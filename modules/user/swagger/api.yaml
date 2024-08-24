@@ -3,7 +3,7 @@ info:
   description: "唐僧叨叨 API"
   version: "1.0.0"
   title: "唐僧叨叨 API"
-host: "api.botgate.cn"
+host: "127.0.0.1"
 tags:
   - name: "user"
     description: "用户"

@@ -304,6 +304,59 @@ func (m *Manager) addAdminUser(c *wkhttp.Context) {
 }
 
 // 添加一个用户
+func (m *Manager) InnerAddUser(userModel *Model) error {
+
+	tx, err := m.db.session.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := recover(); err != nil {
+			tx.Rollback()
+			panic(err)
+		}
+	}()
+	err = m.userDB.insertTx(userModel, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = m.addSystemFriend(userModel.UID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = m.addFileHelperFriend(userModel.UID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	//发送用户注册事件
+	// eventID, err := m.ctx.EventBegin(&wkevent.Data{
+	// 	Event: event.EventUserRegister,
+	// 	Type:  wkevent.Message,
+	// 	Data: map[string]interface{}{
+	// 		"uid": uid,
+	// 	},
+	// }, tx)
+	// if err != nil {
+	// 	tx.RollbackUnlessCommitted()
+	// 	m.Error("开启事件失败！", zap.Error(err))
+	// 	c.ResponseError(errors.New("开启事件失败！"))
+	// 	return
+	// }
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return nil
+	// m.ctx.EventCommit(eventID)
+	// c.ResponseOK()
+}
+
+// 添加一个用户
 func (m *Manager) addUser(c *wkhttp.Context) {
 	err := c.CheckLoginRoleIsSuperAdmin()
 	if err != nil {
