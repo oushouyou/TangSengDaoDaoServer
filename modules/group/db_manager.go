@@ -41,7 +41,7 @@ func (m *managerDB) queryGroupCountWithKeyWord(keyword string) (int64, error) {
 // 查询群成员数量
 func (m *managerDB) queryGroupsMemberCount(groupNos []string) ([]*managerGroupCountModel, error) {
 	var list []*managerGroupCountModel
-	_, err := m.session.SelectBySql("select  *,(select count(*) from group_member m where m.group_no=g.group_no) member_count from `group` g where group_no in ?", groupNos).Load(&list)
+	_, err := m.session.SelectBySql("select  *,(select count(*) from group_member m where m.group_no=g.group_no and is_deleted=0) member_count from `group` g where group_no in ?", groupNos).Load(&list)
 	return list, err
 }
 
