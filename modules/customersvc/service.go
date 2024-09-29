@@ -42,6 +42,7 @@ func NewService(ctx *config.Context) IService {
 }
 
 func (s *Service) AwakenTheGroup(customer Customer) (string, error) {
+
 	// 1. 判断客户是否已经有了服务群，如果没有创建，有了直接返回群ID
 	cgModel, err := s.db.queryWithCustomerExternalNo(customer.Username)
 	if err != nil {
@@ -67,8 +68,9 @@ func (s *Service) AwakenTheGroup(customer Customer) (string, error) {
 		userModel.QRVercode = fmt.Sprintf("%s@%d", util.GenerUUID(), common.QRCode)
 		userModel.Phone = customer.Phone
 		userModel.Username = customer.Username
+		userModel.Email = customer.Email
 		userModel.Zone = "0086"
-		userModel.Password = util.MD5(util.MD5("12345678"))
+		userModel.Password = "" //util.MD5(util.MD5("12345678"))
 		userModel.ShortNo = util.Ten2Hex(time.Now().UnixNano())
 		userModel.IsUploadAvatar = 0
 		userModel.NewMsgNotice = 1
@@ -87,19 +89,21 @@ func (s *Service) AwakenTheGroup(customer Customer) (string, error) {
 		groupReq := &group.AddGroupReq{
 			GroupNo: customer.Username + "_group",
 			Name:    "专属服务",
-			Creator: uid,
+			Creator: s.ctx.GetConfig().Account.SystemUID,
 		}
 		s.groupSvc.AddGroup(groupReq)
 		//客户账号加入群。
 		groupMreq := &group.AddMemberReq{
 			GroupNo:   groupReq.GroupNo,
 			MemberUID: uid,
+			Role:      0,
 		}
 		s.groupSvc.AddMember(groupMreq)
 		//系统账号加入群。
 		groupMreq2 := &group.AddMemberReq{
 			GroupNo:   groupReq.GroupNo,
 			MemberUID: s.ctx.GetConfig().Account.SystemUID,
+			Role:      1,
 		}
 		s.groupSvc.AddMember(groupMreq2)
 		cgModel = &model{
@@ -122,98 +126,3 @@ func (s *Service) AwakenTheGroup(customer Customer) (string, error) {
 		return cgModel.GroupNo, nil
 	}
 }
-
-// func addUser(c *wkhttp.Context) {
-
-// 	uid := util.GenerUUID()
-// 	var shortNo = ""
-// 	var shortNumStatus = 0
-// 	if m.ctx.GetConfig().ShortNo.NumOn {
-// 		shortNo, err = m.commonService.GetShortno()
-// 		if err != nil {
-// 			m.Error("获取短编号失败！", zap.Error(err))
-// 			c.ResponseError(errors.New("获取短编号失败！"))
-// 			return
-// 		}
-// 	} else {
-// 		shortNo = util.Ten2Hex(time.Now().UnixNano())
-// 	}
-// 	if m.ctx.GetConfig().ShortNo.EditOff {
-// 		shortNumStatus = 1
-// 	}
-// 	tx, err := m.db.session.Begin()
-// 	if err != nil {
-// 		m.Error("开启事物错误", zap.Error(err))
-// 		c.ResponseError(errors.New("开启事物错误"))
-// 		return
-// 	}
-// 	defer func() {
-// 		if err := recover(); err != nil {
-// 			tx.Rollback()
-// 			panic(err)
-// 		}
-// 	}()
-// 	userModel := &Model{}
-// 	userModel.UID = uid
-// 	userModel.Name = req.Name
-// 	userModel.Vercode = fmt.Sprintf("%s@%d", util.GenerUUID(), common.User)
-// 	userModel.QRVercode = fmt.Sprintf("%s@%d", util.GenerUUID(), common.QRCode)
-// 	userModel.Phone = req.Phone
-// 	userModel.Username = fmt.Sprintf("%s%s", req.Zone, req.Phone)
-// 	userModel.Zone = req.Zone
-// 	userModel.Password = util.MD5(util.MD5(req.Password))
-// 	userModel.ShortNo = shortNo
-// 	userModel.IsUploadAvatar = 0
-// 	userModel.NewMsgNotice = 1
-// 	userModel.MsgShowDetail = 1
-// 	userModel.SearchByPhone = 1
-// 	userModel.ShortStatus = shortNumStatus
-// 	userModel.SearchByShort = 1
-// 	userModel.VoiceOn = 1
-// 	userModel.ShockOn = 1
-// 	userModel.Sex = req.Sex
-// 	userModel.Status = int(common.UserAvailable)
-// 	err = m.userDB.insertTx(userModel, tx)
-// 	if err != nil {
-// 		tx.Rollback()
-// 		m.Error("添加用户错误", zap.String("username", req.Phone))
-// 		c.ResponseError(err)
-// 		return
-// 	}
-
-// 	err = m.addSystemFriend(uid)
-// 	if err != nil {
-// 		tx.Rollback()
-// 		c.ResponseError(errors.New("添加后台生成用户和系统账号为好友关系失败"))
-// 		return
-// 	}
-// 	err = m.addFileHelperFriend(uid)
-// 	if err != nil {
-// 		tx.Rollback()
-// 		c.ResponseError(errors.New("添加后台生成用户和文件助手为好友关系失败"))
-// 		return
-// 	}
-// 	//发送用户注册事件
-// 	eventID, err := m.ctx.EventBegin(&wkevent.Data{
-// 		Event: event.EventUserRegister,
-// 		Type:  wkevent.Message,
-// 		Data: map[string]interface{}{
-// 			"uid": uid,
-// 		},
-// 	}, tx)
-// 	if err != nil {
-// 		tx.RollbackUnlessCommitted()
-// 		m.Error("开启事件失败！", zap.Error(err))
-// 		c.ResponseError(errors.New("开启事件失败！"))
-// 		return
-// 	}
-// 	err = tx.Commit()
-// 	if err != nil {
-// 		tx.Rollback()
-// 		m.Error("数据库事物提交失败", zap.Error(err))
-// 		c.ResponseError(errors.New("数据库事物提交失败"))
-// 		return
-// 	}
-// 	m.ctx.EventCommit(eventID)
-// 	c.ResponseOK()
-// }

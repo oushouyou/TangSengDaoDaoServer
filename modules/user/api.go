@@ -22,6 +22,7 @@ import (
 	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/config"
 	"github.com/TangSengDaoDao/TangSengDaoDaoServerLib/model"
 	"github.com/gocraft/dbr/v2"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 
@@ -165,8 +166,9 @@ func (u *User) Route(r *wkhttp.WKHttp) {
 	v := r.Group("/v1")
 	{
 
-		v.POST("/user/register", u.register)                 //用户注册
-		v.POST("/user/login", u.login)                       // 用户登录
+		v.POST("/user/register", u.register) //用户注册
+		v.POST("/user/login", u.login)
+		v.POST("/user/loginForJwt", u.loginForJwt)           // jwt登录
 		v.POST("/user/usernamelogin", u.usernameLogin)       // 用户名登录
 		v.POST("/user/usernameregister", u.usernameRegister) // 用户名注册
 
@@ -901,6 +903,60 @@ func (u *User) wxLogin(c *wkhttp.Context) {
 		}
 		u.createUser(loginSpanCtx, model, c, nil)
 	}
+}
+
+// JWT登录
+func (u *User) loginForJwt(c *wkhttp.Context) {
+	var req loginReq
+	if err := c.BindJSON(&req); err != nil {
+		c.ResponseError(errors.New("请求数据格式有误！"))
+		return
+	}
+
+	jwtToken := c.Request.Header.Get("jwtToken")
+	// 解析token
+	publicKeyBytes, err := os.ReadFile("tsdddata/rsa-public-key.pem")
+	if err != nil {
+		c.ResponseError(errors.New("获取rsa公钥文件出错"))
+		return
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyBytes)
+	if err != nil {
+		c.ResponseError(errors.New("解释rsa公钥文件失败"))
+		return
+	}
+	token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
+		// 确保算法是期望的
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return publicKey, nil
+	})
+	if err != nil {
+		c.ResponseError(errors.New("解释jwtToken出错"))
+		return
+	}
+	mc := token.Claims.(jwt.MapClaims)
+	username := mc["username"].(string)
+
+	loginSpan := u.ctx.Tracer().StartSpan(
+		"login",
+		opentracing.ChildOf(c.GetSpanContext()),
+	)
+	loginSpanCtx := u.ctx.Tracer().ContextWithSpan(context.Background(), loginSpan)
+	loginSpan.SetTag("username", username)
+	defer loginSpan.Finish()
+	userInfo, err := u.db.QueryByUsernameCxt(loginSpanCtx, username)
+	if err != nil {
+		u.Error("查询用户信息失败！", zap.String("username", username))
+		c.ResponseError(err)
+		return
+	}
+	if userInfo == nil || userInfo.IsDestroy == 1 {
+		c.ResponseError(errors.New("用户不存在"))
+		return
+	}
+	u.execLoginAndRespose(userInfo, config.DeviceFlag(req.Flag), req.Device, loginSpanCtx, c)
 }
 
 // 登录

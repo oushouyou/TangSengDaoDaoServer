@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/base/event"
 	"github.com/TangSengDaoDao/TangSengDaoDaoServer/modules/user"
@@ -46,6 +47,7 @@ func (m *Manager) Route(r *wkhttp.WKHttp) {
 		auth.GET("/groups/:group_no/members", m.members)             // 群成员
 		auth.GET("/groups/:group_no/members/blacklist", m.blacklist) // 群黑名单成员
 		auth.DELETE("/groups/:group_no/members", m.removeMember)     // 移除群成员
+		auth.POST("/groups/addMembers", m.addMembers)                // 新增群成员
 	}
 }
 
@@ -396,6 +398,46 @@ func (m *Manager) removeMember(c *wkhttp.Context) {
 	}
 	c.Request.URL.Path = fmt.Sprintf("/v1/groups/%s/members", c.Param("group_no"))
 	m.ctx.GetHttpRoute().HandleContext(c)
+}
+
+// 新增群成员
+func (m *Manager) addMembers(c *wkhttp.Context) {
+	err := c.CheckLoginRoleIsSuperAdmin()
+	if err != nil {
+		c.ResponseError(err)
+		return
+	}
+	groupNo := c.Query("groupNo")
+	if groupNo == "" {
+		c.ResponseError(errors.New("群编号不能为空！"))
+		return
+	}
+	memberIDs := c.Query("memberIDs")
+	if memberIDs == "" {
+		c.ResponseError(errors.New("用户Usernames不能为空！"))
+		return
+	}
+	ids := strings.Split(memberIDs, ",")
+	errids := ""
+	for _, val := range ids {
+		// 校验 val是否存在的member
+		user, _ := m.userDB.QueryByUsername(strings.TrimSpace(val))
+		if user != nil {
+			model := &MemberModel{
+				GroupNo: groupNo,
+				UID:     user.UID,
+				Status:  1,
+			}
+			m.db.InsertMember(model)
+		} else {
+			errids += val + ","
+		}
+	}
+	if errids != "" {
+		c.Response("操作成功！但是存在无效Usernames = " + errids)
+	} else {
+		c.ResponseOK()
+	}
 }
 
 // 群成员

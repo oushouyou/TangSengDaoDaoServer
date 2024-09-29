@@ -284,6 +284,8 @@ func (s *Service) AddMember(model *AddMemberReq) error {
 		err := s.db.InsertMember(&MemberModel{
 			GroupNo: model.GroupNo,
 			UID:     model.MemberUID,
+			Status:  1,
+			Role:    model.Role,
 		})
 		return err
 	}
@@ -418,6 +420,7 @@ type AddGroupReq struct {
 type AddMemberReq struct {
 	GroupNo   string
 	MemberUID string
+	Role      int
 }
 
 // InfoResp 群信息

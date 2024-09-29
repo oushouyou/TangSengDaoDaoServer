@@ -372,9 +372,9 @@ func (m *Manager) addUser(c *wkhttp.Context) {
 		c.ResponseError(err)
 		return
 	}
-	userInfo, err := m.userDB.QueryByUsername(fmt.Sprintf("%s%s", req.Zone, req.Phone))
+	userInfo, err := m.userDB.QueryByUsername(req.Username)
 	if err != nil {
-		m.Error("查询用户信息失败！", zap.String("username", req.Phone))
+		m.Error("查询用户信息失败！", zap.String("username", req.Username))
 		c.ResponseError(err)
 		return
 	}
@@ -415,9 +415,9 @@ func (m *Manager) addUser(c *wkhttp.Context) {
 	userModel.Name = req.Name
 	userModel.Vercode = fmt.Sprintf("%s@%d", util.GenerUUID(), common.User)
 	userModel.QRVercode = fmt.Sprintf("%s@%d", util.GenerUUID(), common.QRCode)
-	userModel.Phone = req.Phone
-	userModel.Username = fmt.Sprintf("%s%s", req.Zone, req.Phone)
-	userModel.Zone = req.Zone
+	userModel.Phone = ""
+	userModel.Username = req.Username
+	userModel.Zone = ""
 	userModel.Password = util.MD5(util.MD5(req.Password))
 	userModel.ShortNo = shortNo
 	userModel.IsUploadAvatar = 0
@@ -433,7 +433,7 @@ func (m *Manager) addUser(c *wkhttp.Context) {
 	err = m.userDB.insertTx(userModel, tx)
 	if err != nil {
 		tx.Rollback()
-		m.Error("添加用户错误", zap.String("username", req.Phone))
+		m.Error("添加用户错误", zap.String("username", req.Username))
 		c.ResponseError(err)
 		return
 	}
@@ -830,8 +830,8 @@ func (r managerAddUserReq) checkAddUserReq() error {
 	if strings.TrimSpace(r.Password) == "" {
 		return errors.New("密码不能为空！")
 	}
-	if strings.TrimSpace(r.Phone) == "" {
-		return errors.New("手机号不能为空！")
+	if strings.TrimSpace(r.Username) == "" {
+		return errors.New("用户ID不能为空！")
 	}
 
 	return nil
@@ -1000,8 +1000,7 @@ type managerLoginResp struct {
 type managerAddUserReq struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
-	Phone    string `json:"phone"`
-	Zone     string `json:"zone"`
+	Username string `json:"username"`
 	Sex      int    `json:"sex"`
 }
 type managerBlackUserResp struct {

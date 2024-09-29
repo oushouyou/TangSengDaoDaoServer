@@ -19,7 +19,6 @@ WORKDIR /go/release
 #       apt-get -y install ca-certificates 
 
 ADD . .
-
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags='-w -extldflags "-static"' -installsuffix cgo -o app ./main.go
 
 # RUN GIT_COMMIT=$(git rev-parse HEAD) && \
